@@ -1,0 +1,9 @@
+# we aren't here for project setups
+.vscode
+
+# build and required stuff that should no be pushed
+build
+toolchains/**
+!toolchains/*.cmake
+pico-sdk
+doxygen
