@@ -77,7 +77,7 @@ picos_schedule_done:
 .global picos_exec_stack
 .type picos_exec_stack, %function
 picos_exec_stack:
-	cpsid i // Disable interrupts to avoid interference
+    cpsid i // Disable interrupts to avoid interference
     // Put the given process stack into pivledged thread mode
     // * will utilize the process stack pointer
     // * will run in privledged thread mode
@@ -86,15 +86,15 @@ picos_exec_stack:
     msr psp, r0 // put stack pointer into process stack pointer
     mov sp, r0  // make sure the stack pointer is equal to the process stack pointer
     isb // make sure the control register change is flushed
-	// We need to read the "fake" context from the process
+    // We need to read the "fake" context from the process
     // * we will simply read the context but ignore the values
-	pop {r4-r7} // ignore read registers
-	pop {r4-r7} // ignore read registers
-	pop {r0-r3} // ignore read registers
-	pop {r4-r5} // ignore read registers
-	pop {r3} // Read the thread function address to jump to
-	mov lr, r3 // Set the return link for the call to the thread function
-	pop {r3} // ignore read register
+    pop {r4-r7} // ignore read registers
+    pop {r4-r7} // ignore read registers
+    pop {r0-r3} // ignore read registers
+    pop {r4-r5} // ignore read registers
+    pop {r3} // Read the thread function address to jump to
+    mov lr, r3 // Set the return link for the call to the thread function
+    pop {r3} // ignore read register
     // Finalize call
-	cpsie i // Enable interrupts again
-	bx lr // Branch to target
+    cpsie i // Enable interrupts again
+    bx lr // Branch to target
