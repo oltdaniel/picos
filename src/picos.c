@@ -241,3 +241,14 @@ void picos_scheduler_main1() {
     // Start execution of the initial process (here idle process)
     picos_exec_stack(picos_current[1]->sp);
 }
+
+void picos_enter_critical() {
+    // This will disable the systick counter
+    *(volatile unsigned int *)(0xe0000000 | M0PLUS_SYST_CSR_OFFSET) &=
+        ~(1 << 0);
+}
+
+void picos_leave_critical() {
+    // This will enable the systick counter
+    *(volatile unsigned int *)(0xe0000000 | M0PLUS_SYST_CSR_OFFSET) |= (1 << 0);
+}

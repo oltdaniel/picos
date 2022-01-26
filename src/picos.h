@@ -85,7 +85,7 @@
 /**
  * @brief How many µs do we want to wait between scheduler calls
  */
-#define PICOS_SCHEDULER_INTERVAL_US 100000
+#define PICOS_SCHEDULER_INTERVAL_US 10000
 
 /**
  * @brief Process ID type used in the PicOS.
@@ -219,3 +219,19 @@ picos_pid picos_exec(picos_thread_func func, picos_thread_stack_t *stack);
  * interrupted by the scheduler.
  */
 void picos_start();
+
+/**
+ * @brief Block the scheduler from firing.
+ *
+ * If you have critical behavior that should not be interrupted by the
+ * scheduler, the scheduler can be temporarly disabled with this call. We simply
+ * disable the countdown that fires the scheduler if counted down.
+ */
+void picos_enter_critical();
+
+/**
+ * @brief Unblock the scheduler from firing.
+ *
+ * This will redo the changes done by the enter_critcial function.
+ */
+void picos_leave_critical();
