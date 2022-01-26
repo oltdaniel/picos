@@ -10,8 +10,6 @@ The goal of this project is, to create a simple framework that allows for quick 
 
 ## Getting started
 
-This project is based on my [rp2040-remote](https://github.com/oltdaniel/rp2040-remote) project. But you can decide youself how to run this.
-
 #### Project setup
 
 ```bash
@@ -21,11 +19,35 @@ $ cd toolchains
 $ wget https://developer.arm.com/-/media/Files/downloads/gnu-rm/10.3-2021.10/gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2
 $ tar -xf gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2
 $ cd ..
+```
+
+#### Manual build
+
+```bash
 $ mkdir build
 $ cd build
 $ cmake .. -DCMAKE_BUILD_TYPE=Debug
 $ make
 ```
+
+## Example
+
+> The current example can be found in [`src/main.c`](./src/main.c).
+
+By default, the LEDs for status output are enabled and will output from GP2 to GP5. These 4 LEDs have the following meaning:
+
+| Index | Description |
+|-------|-------------|
+| 1 | For each Interrupt of the scheduler on Core 0, this LED will be toggled. |
+| 2 | For each Interrupt of the scheduler on Core 1, this LED will be toggled. |
+| 3 | Will stay on, as long as the idle process is scheduled on Core 0. |
+| 4 | Will stay on, as long as the idle process is scheduled on Core 1. |
+
+## References
+
+- [**Raspberry Pi Pico Datasheet**](https://datasheets.raspberrypi.com/pico/pico-datasheet.pdf)
+- [**Raspberry Pi Pico C/C++ SDK**](https://datasheets.raspberrypi.com/pico/raspberry-pi-pico-c-sdk.pdf)
+- [**ARM® v6-M Architecture Reference Manual**](https://documentation-service.arm.com/static/5f8ff05ef86e16515cdbf826)
 
 ## License
 

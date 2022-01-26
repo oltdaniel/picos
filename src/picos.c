@@ -67,9 +67,12 @@ picos_pid picos_exec(picos_thread_func func, picos_thread_stack_t *s) {
 }
 
 void picos_start() {
+    // launch scheduler on second core
     multicore_launch_core1(picos_scheduler_main1);
+    // launch scheduler on this core
     picos_scheduler_main0();
 
+    // make sure we never return to main
     for (;;)
         ;
 }
@@ -112,12 +115,23 @@ selectNext:;
             if (c->cpu == 0xFF) {
                 c->cpu = cpu;
             }
+            // found a new thread, stop searching
+            break;
         }
     }
+
+#ifndef PICOS_NO_LED
+    // turn off idle led
+    gpio_put(PICOS_LED_START + PICOS_CORES + cpu, 0);
+#endif
 
     goto end;
 
 selectIdle:;
+#ifndef PICOS_NO_LED
+    // turn on idle led
+    gpio_put(PICOS_LED_START + PICOS_CORES + cpu, 1);
+#endif
     // assign the idle process if nothing there to continue
     picos_current[cpu] = &picos_threads[cpu];
 
@@ -129,14 +143,8 @@ end:;
 PICOS_STACK(idle0, PICOS_IDLE_STACK_SIZE)
 PICOS_STACK(idle1, PICOS_IDLE_STACK_SIZE)
 void picos_idle() {
-    const uint8_t cpu = *(uint32_t *)(SIO_BASE);
-    for (;;) {
-#ifndef PICOS_NO_LED
-        gpio_put(PICOS_LED_START + PICOS_CORES + cpu,
-                 !gpio_get(PICOS_LED_START + PICOS_CORES + cpu));
-#endif
+    for (;;)
         asm("wfi"); // wait for the next interrupt
-    }
 }
 
 static picos_thread_stack_t *picos_idle_stack[PICOS_CORES] = {
@@ -169,9 +177,9 @@ void picos_setup_idle() {
 }
 
 void picos_suicide() {
-    picos_lock();
-
     uint8_t cpu = *(uint32_t *)(SIO_BASE);
+
+    picos_lock();
 
     // Cleanup the thread slot
     picos_thread_t *current = picos_current[cpu];
@@ -182,7 +190,8 @@ void picos_suicide() {
 
     picos_unlock();
 
-    // avoid continiung with an return which would cause a crash
+    // avoid continiung with an return which would cause a crash if we return to
+    // here
     for (;;)
         ;
 }
@@ -191,7 +200,7 @@ void picos_scheduler_main0() {
     // This will set the wanted counter value which defines the delays between
     // scheduler calls
     *(volatile unsigned int *)(0xe0000000 | M0PLUS_SYST_RVR_OFFSET) =
-        (SYSTEM_CLOCK_HZ / 1000000) *
+        (clock_get_hz(clk_sys) / 1000000) *
         PICOS_SCHEDULER_INTERVAL_US; // the counter value to set in CSR when 0
                                      // is eached
     // This will configure the systick timer so we have the behavior required
@@ -214,7 +223,7 @@ void picos_scheduler_main1() {
     // This will set the wanted counter value which defines the delays
     // between scheduler calls
     *(volatile unsigned int *)(0xe0000000 | M0PLUS_SYST_RVR_OFFSET) =
-        (SYSTEM_CLOCK_HZ / 1000000) *
+        (clock_get_hz(clk_sys) / 1000000) *
         PICOS_SCHEDULER_INTERVAL_US; // the counter value to set in
                                      // CSR when 0 is eached
     // This will configure the systick timer so we have the behavior required

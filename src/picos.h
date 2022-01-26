@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "hardware/clocks.h"
 #include "hardware/irq.h"
 #include "hardware/timer.h"
 #include "pico/multicore.h"
@@ -44,7 +45,7 @@
  * LEDs next to each other. Note: These pins will be overwritten with with
  * #picos_init and should not be used by any other functionality.
  */
-#define PICOS_LED_START 10
+#define PICOS_LED_START 2
 #endif
 #endif
 
@@ -81,10 +82,6 @@
  */
 #define PICOS_SCHEDULE_SPINLOCK ((uint32_t *)(SIO_BASE + SIO_SPINLOCK0_OFFSET))
 
-/**
- * @brief The system clock speed we will use to define our scheduler calls
- */
-#define SYSTEM_CLOCK_HZ 125000000
 /**
  * @brief How many µs do we want to wait between scheduler calls
  */
