@@ -15,9 +15,7 @@ void picos_scheduler_main();
 void picos_exec_stack(uint32_t sp);
 void picos_set_psp(uint32_t sp, uint32_t ctrl);
 
-void picos_init() {
-    picos_setup_idle();
-}
+void picos_init() { picos_setup_idle(); }
 
 picos_pid picos_exec(picos_thread_func func, picos_thread_stack_t *s) {
     picos_pid thread_slot;
@@ -25,12 +23,14 @@ picos_pid picos_exec(picos_thread_func func, picos_thread_stack_t *s) {
     spin_lock_blocking(PICOS_SCHEDULE_SPINLOCK);
 
     // find free slot
-    for(thread_slot = PICOS_CORES; thread_slot < PICOS_MAX_THREADS; thread_slot++) {
-        if(picos_threads[thread_slot].state == PICOS_UNKNOWN) break;
+    for (thread_slot = PICOS_CORES; thread_slot < PICOS_MAX_THREADS;
+         thread_slot++) {
+        if (picos_threads[thread_slot].state == PICOS_UNKNOWN)
+            break;
     }
 
     // check if we found a free slot
-    if(thread_slot > PICOS_MAX_THREADS - 1) {
+    if (thread_slot > PICOS_MAX_THREADS - 1) {
         spin_unlock_unsafe(PICOS_SCHEDULE_SPINLOCK);
         return PICOS_INVALID_PID;
     }
@@ -83,7 +83,7 @@ void isr_hardfault() {
     // Trigger scheduling routine (will store context)
     isr_systick();
 
-    for(;;)
+    for (;;)
         ;
 }
 

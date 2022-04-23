@@ -66,7 +66,9 @@
  * If we are in a schedule process, we want to exclusively have access to the
  * #picos_threads and #picos_current to make changes.
  */
-#define PICOS_SCHEDULE_SPINLOCK ((spin_lock_t *) (SIO_BASE + SIO_SPINLOCK0_OFFSET + PICO_SPINLOCK_ID_OS1 * 4))
+#define PICOS_SCHEDULE_SPINLOCK                                                \
+    ((spin_lock_t *)(SIO_BASE + SIO_SPINLOCK0_OFFSET +                         \
+                     PICO_SPINLOCK_ID_OS1 * 4))
 
 /**
  * @brief How many µs do we want to wait between scheduler calls
@@ -102,11 +104,12 @@ typedef enum picos_thread_state_t {
      */
     PICOS_RUNNING,
     /**
-     * @brief Describes a thread that had an hardfault. Information will be preserved.
+     * @brief Describes a thread that had an hardfault. Information will be
+     * preserved.
      *
-     * If a process produces and hardfault, it will receive this process state and the
-     * scheduler will receive a new call and switch to a new process. If no new process
-     * can be found, the idle process will kick in. 
+     * If a process produces and hardfault, it will receive this process state
+     * and the scheduler will receive a new call and switch to a new process. If
+     * no new process can be found, the idle process will kick in.
      */
     PICOS_HARDFAULT
 } picos_thread_state_t;

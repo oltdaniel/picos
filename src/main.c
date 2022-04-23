@@ -15,7 +15,7 @@ PICOS_STACK(test2, 128);
 void test2() {
     // Example from: https://wiki.segger.com/Cortex-M_Fault#Illegal_Memory_Write
     int r = 0;
-    volatile unsigned int* p = (unsigned int*)0x00100000;
+    volatile unsigned int *p = (unsigned int *)0x00100000;
 
     *p = 0x00BADA55;
 
