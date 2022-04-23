@@ -9,19 +9,11 @@ picos_thread_t *picos_current[PICOS_CORES];
 // Declare functions that will be later defined
 void picos_setup_idle();
 void picos_suicide();
-void picos_scheduler_main0();
-void picos_scheduler_main1();
+void picos_scheduler_main();
 
 // Functions from our assembler code
 void picos_exec_stack(uint32_t sp);
 void picos_set_psp(uint32_t sp, uint32_t ctrl);
-
-static inline void picos_lock() {
-    while (!*PICOS_SCHEDULE_SPINLOCK)
-        ;
-}
-
-static inline void picos_unlock() { *PICOS_SCHEDULE_SPINLOCK = 0; }
 
 void picos_init() {
 #ifndef PICOS_NO_LED
@@ -34,17 +26,24 @@ void picos_init() {
 }
 
 picos_pid picos_exec(picos_thread_func func, picos_thread_stack_t *s) {
-    static picos_pid num_threads = 2;
+    picos_pid thread_slot;
 
-    // check if limit reached
-    if (num_threads >= PICOS_MAX_THREADS) {
+    spin_lock_blocking(PICOS_SCHEDULE_SPINLOCK);
+
+    // find free slot
+    for(thread_slot = PICOS_CORES; thread_slot < PICOS_MAX_THREADS; thread_slot++) {
+        if(picos_threads[thread_slot].state == PICOS_UNKNOWN) break;
+    }
+
+    // check if we found a free slot
+    if(thread_slot > PICOS_MAX_THREADS - 1) {
+        spin_unlock_unsafe(PICOS_SCHEDULE_SPINLOCK);
         return PICOS_INVALID_PID;
     }
 
-    picos_lock();
-
-    picos_thread_t *slot = &picos_threads[num_threads];
-    slot->pid = num_threads;
+    // initialize free slot
+    picos_thread_t *slot = &picos_threads[thread_slot];
+    slot->pid = thread_slot;
     slot->cpu = 0xFF;
     // calculate given address to a stack address (switch direction)
     slot->sp = (uint32_t)(s->data + s->size - 16);
@@ -59,18 +58,16 @@ picos_pid picos_exec(picos_thread_func func, picos_thread_stack_t *s) {
                                   // this is the function to call next.
     slot->state = PICOS_RUNNING;
 
-    num_threads++;
+    spin_unlock_unsafe(PICOS_SCHEDULE_SPINLOCK);
 
-    picos_unlock();
-
-    return num_threads;
+    return thread_slot;
 }
 
 void picos_start() {
     // launch scheduler on second core
-    multicore_launch_core1(picos_scheduler_main1);
+    multicore_launch_core1(picos_scheduler_main);
     // launch scheduler on this core
-    picos_scheduler_main0();
+    picos_scheduler_main();
 
     // make sure we never return to main
     for (;;)
@@ -92,7 +89,7 @@ void picos_schedule() {
 #endif
 
     // entering exclusive section
-    picos_lock();
+    spin_lock_blocking(PICOS_SCHEDULE_SPINLOCK);
 
     // check if there is actually a thread we could shedule
     for (picos_pid i = PICOS_CORES; i < PICOS_MAX_THREADS; i++) {
@@ -136,7 +133,7 @@ selectIdle:;
     picos_current[cpu] = &picos_threads[cpu];
 
 end:;
-    picos_unlock();
+    spin_unlock_unsafe(PICOS_SCHEDULE_SPINLOCK);
 }
 
 // idle structure
@@ -179,7 +176,7 @@ void picos_setup_idle() {
 void picos_suicide() {
     uint8_t cpu = *(uint32_t *)(SIO_BASE);
 
-    picos_lock();
+    spin_lock_blocking(PICOS_SCHEDULE_SPINLOCK);
 
     // Cleanup the thread slot
     picos_thread_t *current = picos_current[cpu];
@@ -188,7 +185,7 @@ void picos_suicide() {
     current->sp = 0;
     current->cpu = 0xFF;
 
-    picos_unlock();
+    spin_unlock_unsafe(PICOS_SCHEDULE_SPINLOCK);
 
     // avoid continiung with an return which would cause a crash if we return to
     // here
@@ -196,7 +193,9 @@ void picos_suicide() {
         ;
 }
 
-void picos_scheduler_main0() {
+void picos_scheduler_main() {
+    uint8_t cpu = *(uint32_t *)(SIO_BASE);
+
     // This will set the wanted counter value which defines the delays between
     // scheduler calls
     *(volatile unsigned int *)(0xe0000000 | M0PLUS_SYST_RVR_OFFSET) =
@@ -216,30 +215,7 @@ void picos_scheduler_main0() {
         (3 << 22); // priority systick=0(high), priority pendsv=3(low)
 
     // Start execution of the initial process (here idle process)
-    picos_exec_stack(picos_current[0]->sp);
-}
-
-void picos_scheduler_main1() {
-    // This will set the wanted counter value which defines the delays
-    // between scheduler calls
-    *(volatile unsigned int *)(0xe0000000 | M0PLUS_SYST_RVR_OFFSET) =
-        (clock_get_hz(clk_sys) / 1000000) *
-        PICOS_SCHEDULER_INTERVAL_US; // the counter value to set in
-                                     // CSR when 0 is eached
-    // This will configure the systick timer so we have the behavior required
-    // for scheduling
-    *(volatile unsigned int *)(0xe0000000 | M0PLUS_SYST_CSR_OFFSET) =
-        (1 << 0)    // enable counter
-        | (1 << 1)  // counter at 0 causes systick exception status pending
-        | (1 << 2); // use processor clock
-    // This will change the priority of the system handlers we utilize for our
-    // scheduler calls
-    *(volatile unsigned int *)(0xe0000000 | M0PLUS_SHPR3_OFFSET) =
-        (0 << 30) |
-        (3 << 22); // priority systick=0(high), priority pendsv=3(low)
-
-    // Start execution of the initial process (here idle process)
-    picos_exec_stack(picos_current[1]->sp);
+    picos_exec_stack(picos_current[cpu]->sp);
 }
 
 void picos_enter_critical() {

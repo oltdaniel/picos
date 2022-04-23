@@ -11,6 +11,7 @@
 
 #include "hardware/clocks.h"
 #include "hardware/irq.h"
+#include "hardware/sync.h"
 #include "hardware/timer.h"
 #include "pico/multicore.h"
 #include "pico/stdlib.h"
@@ -80,7 +81,7 @@
  * If we are in a schedule process, we want to exclusively have access to the
  * #picos_threads and #picos_current to make changes.
  */
-#define PICOS_SCHEDULE_SPINLOCK ((uint32_t *)(SIO_BASE + SIO_SPINLOCK0_OFFSET))
+#define PICOS_SCHEDULE_SPINLOCK ((spin_lock_t *) (SIO_BASE + SIO_SPINLOCK0_OFFSET + PICO_SPINLOCK_ID_OS1 * 4))
 
 /**
  * @brief How many µs do we want to wait between scheduler calls
