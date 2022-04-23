@@ -16,12 +16,6 @@ void picos_exec_stack(uint32_t sp);
 void picos_set_psp(uint32_t sp, uint32_t ctrl);
 
 void picos_init() {
-#ifndef PICOS_NO_LED
-    for (uint8_t i = PICOS_LED_START; i < PICOS_LED_START + 4; i++) {
-        gpio_init(i);
-        gpio_set_dir(i, GPIO_OUT);
-    }
-#endif
     picos_setup_idle();
 }
 
@@ -97,11 +91,6 @@ void picos_schedule() {
     uint8_t cpu = *(uint32_t *)(SIO_BASE);
     picos_thread_t *current = picos_current[cpu];
 
-#ifndef PICOS_NO_LED
-    // toggle led status
-    gpio_put(PICOS_LED_START + cpu, !gpio_get(PICOS_LED_START + cpu));
-#endif
-
     // entering exclusive section
     spin_lock_blocking(PICOS_SCHEDULE_SPINLOCK);
 
@@ -131,18 +120,9 @@ selectNext:;
         }
     }
 
-#ifndef PICOS_NO_LED
-    // turn off idle led
-    gpio_put(PICOS_LED_START + PICOS_CORES + cpu, 0);
-#endif
-
     goto end;
 
 selectIdle:;
-#ifndef PICOS_NO_LED
-    // turn on idle led
-    gpio_put(PICOS_LED_START + PICOS_CORES + cpu, 1);
-#endif
     // assign the idle process if nothing there to continue
     picos_current[cpu] = &picos_threads[cpu];
 

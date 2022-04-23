@@ -35,21 +35,6 @@
  */
 #define PICOS_MAX_THREADS (PICOS_CORES + PICOS_USER_THREADS)
 
-#ifndef PICOS_NO_LED
-#ifndef PICOS_LED_START
-/**
- * @brief The first GPIO pin of the LED pins for visualization.
- *
- * PicOS will use LEDs to visualize the activity. We use a total of 4 LEDs (2
- * for both core schedulers + 2 for each idle process). The default Raspberry PI
- * Pico board has a nice Pinout which allows multiple combinations of activity
- * LEDs next to each other. Note: These pins will be overwritten with with
- * #picos_init and should not be used by any other functionality.
- */
-#define PICOS_LED_START 2
-#endif
-#endif
-
 /**
  * @brief Create a new stack with name and size.
  * @param NAME Needs to be unique to the scope. Generally the name of the
