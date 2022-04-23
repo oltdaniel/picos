@@ -117,13 +117,13 @@ typedef enum picos_thread_state_t {
      */
     PICOS_RUNNING,
     /**
-     * @brief Describes a thread that has ended successfully.
+     * @brief Describes a thread that had an hardfault. Information will be preserved.
      *
-     * This state will be assigned to any thread, that has ended and has nothing
-     * left to do. The thread information will be cleared, which allows for
-     * recycling of this specific slot.
+     * If a process produces and hardfault, it will receive this process state and the
+     * scheduler will receive a new call and switch to a new process. If no new process
+     * can be found, the idle process will kick in. 
      */
-    PICOS_DONE
+    PICOS_HARDFAULT
 } picos_thread_state_t;
 
 /**

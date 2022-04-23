@@ -79,6 +79,20 @@ void isr_systick() {
     *(volatile uint32_t *)(0xe0000000 | M0PLUS_ICSR_OFFSET) = (1L << 28);
 }
 
+void isr_hardfault() {
+    uint8_t cpu = *(uint32_t *)(SIO_BASE);
+
+    // Update state to hardfault
+    picos_thread_t *current = picos_current[cpu];
+    current->state = PICOS_HARDFAULT;
+
+    // Trigger scheduling routine (will store context)
+    isr_systick();
+
+    for(;;)
+        ;
+}
+
 void picos_schedule() {
     uint8_t cpu = *(uint32_t *)(SIO_BASE);
     picos_thread_t *current = picos_current[cpu];
@@ -180,7 +194,7 @@ void picos_suicide() {
 
     // Cleanup the thread slot
     picos_thread_t *current = picos_current[cpu];
-    current->state = PICOS_DONE;
+    current->state = PICOS_UNKNOWN;
     current->pid = 0;
     current->sp = 0;
     current->cpu = 0xFF;
